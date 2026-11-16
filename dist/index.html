@@ -1,0 +1,159 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>安装成本部每日早会</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#18243b;font:15px/1.55 "Microsoft YaHei",sans-serif}header{background:#152339;color:white;padding:18px max(24px,calc((100% - 1120px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px}header strong{font-size:19px}header small{color:#c4cfdf}main{max-width:1168px;margin:auto;padding:28px 24px}button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid #d4dce8;border-radius:8px;padding:8px 14px;background:white;color:#243650}button:hover{background:#eaf0f9}.primary{background:#345fbd;color:white;border-color:#345fbd}.primary:hover{background:#274eaa}nav{display:flex;gap:8px;overflow:auto;padding:2px 2px 12px}nav button{white-space:nowrap}nav [aria-selected=true]{background:#e2ebff;border-color:#809de0;color:#23468f}.paper{background:white;border:1px solid #e1e6ee;border-radius:16px;padding:clamp(16px,4vw,38px);box-shadow:0 8px 25px #192f5110}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}h1{margin:3px 0;font-size:clamp(23px,4vw,34px)}.muted{color:#56657c;font-size:13px}h2{font-size:19px;border-top:1px solid #e6ebf2;padding-top:18px;margin:24px 0 12px}h3{font-size:16px;margin:18px 0 10px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px}label{display:block;margin-bottom:10px}input,textarea{display:block;width:100%;padding:8px 10px;background:#f9fafc;border:1px solid #d8e0eb;border-radius:7px;color:inherit}input:focus,textarea:focus{outline:2px solid #829fdc;outline-offset:1px}textarea{resize:vertical;min-height:70px}td textarea{min-height:40px;height:40px}table{border-collapse:collapse;width:100%;min-width:570px}th,td{padding:4px;text-align:left}th{font-size:13px;color:#53627a}td:first-child{width:65px}td:nth-child(2){width:52%}.scroll{overflow:auto}.add{margin-top:8px}.empty{text-align:center;padding:48px 16px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+select{font:inherit;width:100%;padding:8px;background:#f9fafc;border:1px solid #d8e0eb;border-radius:7px;color:inherit}.head-actions{display:flex;align-items:center;gap:8px}#settings{background:transparent;color:#d1dbea;border-color:transparent;padding:5px 9px}nav{flex-wrap:wrap;align-items:flex-start;overflow:visible}nav details{padding:7px 10px;border:1px solid #d4dce8;border-radius:8px;background:white}nav details button{display:block;margin-top:6px}summary{cursor:pointer}#context{position:fixed;z-index:5;box-shadow:0 5px 22px #18243b33}dialog{width:min(420px,90vw);border:1px solid #d4dce8;border-radius:12px;padding:22px}dialog::backdrop{background:#15233966}[hidden]{display:none!important}.editing{display:block;color:#345fbd}.occupied{outline:2px solid #9ab5ef}.attendees{display:flex;gap:8px;align-items:center;margin:6px 0}.attendees span{padding:4px 10px;background:#edf2fa;border-radius:12px}.attendees button{padding:2px 8px}.guest-row{display:flex;gap:6px;margin:8px 0}.guest-row button{white-space:nowrap}.ledger{width:min(1120px,95vw);max-height:88vh}.ledger h2{border:0;margin-top:0}.ledger-close{float:right}.ledger th,.ledger td{padding:8px;border-bottom:1px solid #e1e6ee;vertical-align:top}.ledger td:nth-child(2){width:auto}.ledger td textarea{min-width:105px;height:78px}.ledger section{margin-bottom:18px}.ledger label{margin-top:8px}.ledger details{margin-top:18px}#ledgerMessage{min-height:1.5em}.head-actions{flex-wrap:wrap;justify-content:flex-end}
+/* Keep both work lists visible above the secondary notes. */
+#paper.paper { padding: clamp(16px, 2.4vw, 29px); }
+#paper h2 { margin: 17px 0 9px; padding-top: 12px; }
+#paper .top + p { margin: 4px 0 8px; }
+#paper #basic label { margin-bottom: 3px; }
+#paper #basic input, #paper #basic select { padding-block: 5px; }
+#work { display:grid; gap:10px; align-items:start; }
+#work > section {
+ --accent:#49658c; --tint:#edf2fa;
+ display:grid; grid-template-columns:minmax(0,1fr) auto;
+ grid-template-areas:"title add" "table table"; align-items:center;
+ min-width:0; padding:9px 11px 10px; background:#fff;
+ border:1px solid #d9e2ee; border-top:3px solid var(--accent); border-radius:10px;
+}
+#work > section:nth-child(2) { --accent:#345fbd; --tint:#eaf0ff; }
+#work h3 { grid-area:title; margin:0; padding-right:8px; color:#243c60; font-size:15px; line-height:1.35; }
+#work .add {
+ grid-area:add; margin:0; padding:3px 8px; white-space:nowrap;
+ color:#284e92; border-color:#d4dff0; background:var(--tint); font-size:13px;
+}
+#work .add:hover { border-color:var(--accent); }
+#work .scroll { grid-area:table; margin-top:6px; }
+#work table { table-layout:fixed; min-width:390px; }
+#work th, #work td { padding:2px 3px; vertical-align:top; }
+#work th { font-size:12px; background:var(--tint); padding-block:3px; }
+#work th:first-child, #work td:first-child { width:38px; text-align:center; }
+#work td:first-child { padding-top:8px; color:#536781; font-size:13px; }
+#work th:nth-child(2), #work td:nth-child(2) { width:auto; }
+#work th:nth-child(3) { width:95px; }
+#work th:nth-child(4) { width:27%; }
+#work td textarea, #work td select {
+ min-height:33px; height:33px; padding:5px 6px; font-size:13px; line-height:1.45;
+}
+#work td textarea { resize:none; }
+#work td textarea:focus { height:72px; resize:vertical; }
+#work .editing:empty { display:none; }
+#notes h3 { margin:13px 0 6px; font-size:14px; }
+#notes textarea { min-height:56px; }
+@media (min-width:1100px) {
+ #work { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:540px) {
+ main { padding:14px 10px; }
+ header { padding:10px 12px; }
+ #work > section { padding-inline:7px; }
+ #work table { min-width:325px; }
+ #work th:nth-child(3) { width:77px; }
+ #work th:nth-child(4) { width:25%; }
+ #work h3 { font-size:14px; }
+}
+
+
+body > header { position:sticky; top:0; z-index:4; padding-block:10px; box-shadow:0 2px 8px #15233922; }
+body > header button { padding-block:5px; }
+#context { z-index:6; }
+main { padding-top:14px; }
+#paper h1 { font-size:clamp(20px,3.1vw,30px); line-height:1.25; }
+#paper h2 { font-size:16px; }
+#paper #basic { grid-template-columns:repeat(6,minmax(0,1fr)); gap:5px 8px; }
+#paper #basic label, #paper #people { font-size:13px; }
+#paper #basic :is(input,select) { font-size:13px; min-height:29px; }
+#paper #people { display:flex; align-items:center; flex-wrap:wrap; column-gap:8px; margin-top:5px; }
+#paper #people > div:first-child { white-space:nowrap; }
+#paper #people .attendees { flex-wrap:wrap; margin:0; gap:5px; }
+#paper #people .attendees span { padding:2px 7px; }
+#work > section { grid-template-areas:"title add" "table table" "status status"; }
+#work .work-actions { grid-area:add; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:5px; }
+#copyWorkStatus { grid-area:status; font-size:12px; color:#345fbd; }
+#copyWorkStatus:not(:empty) { margin-top:4px; }
+#notes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:12px; }
+#notes > section { min-width:0; }
+#notes :is(h2,h3) { margin:0 0 4px; padding:0; border:0; font-size:13px; }
+#notes textarea { min-height:37px; height:37px; padding:5px 7px; font-size:13px; }
+#notes textarea:focus { height:72px; }
+#notes .editing:empty { display:none; }
+@media (max-width:635px) { #paper #basic { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:440px) {
+ #notes { grid-template-columns:1fr; gap:7px; }
+ #work h3 { font-size:13px; }
+ #work .add { font-size:12px; padding-inline:4px; }
+}
+
+
+/* Record title, collapsed meeting details, and work tables */
+#paper.paper { padding-top:12px; }
+#paper .top { gap:6px 12px; padding-bottom:0; }
+#paper .top h1 { margin:0; font-size:clamp(18px,2.2vw,25px); line-height:1.25; }
+#paper .top button { padding:4px 9px; font-size:13px; }
+#meetingDetails { margin:10px 0; border:1px solid #dce4ef; border-radius:8px; background:#f8fafc; }
+#meetingDetails summary {
+ display:flex; align-items:center; gap:8px; padding:6px 9px; font-size:13px; list-style:none;
+}
+#meetingDetails summary::-webkit-details-marker { display:none; }
+#meetingDetails summary::before { content:'▸'; color:#476188; }
+#meetingDetails[open] summary::before { content:'▾'; }
+#meetingDetails summary strong { flex:none; }
+#meetingSummary { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#52647d; font-size:12px; }
+#meetingDetails[open] #meetingSummary { display:none; }
+#meetingDetails .meeting-fields { padding:0 9px 8px; }
+#workFocus { background:#eaf0fb; border:1px solid #c8d7f1; border-radius:11px; padding:9px; }
+#paper #workTitle {
+ margin:0 0 8px; padding:0 0 0 8px; border:0; border-left:4px solid #345fbd;
+ color:#203e76; font-size:17px; line-height:1.3;
+}
+#workFocus #work > section { border-color:#b4c6e4; border-top-color:var(--accent); }
+#workFocus #work > section:nth-child(2) { --tint:#dce7ff; --accent:#2c59b5; }
+@media (max-width:540px) {
+ #paper .top button { padding-inline:6px; font-size:12px; }
+ #workFocus { padding:6px; }
+}
+
+
+
+body>header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px}
+.site-brand{text-align:center;white-space:nowrap;font-size:clamp(15px,2.1vw,23px)}
+#recentOpen{justify-self:start;font-size:13px;white-space:nowrap}
+body>header .head-actions{justify-self:end}
+.recent-panel{position:fixed;z-index:3;inset:var(--header-height,85px) auto 0 0;width:min(350px,92vw);overflow:auto;background:#f7f9fd;border-right:1px solid #c8d7ef;box-shadow:4px 0 18px #18335226;padding:13px}
+.recent-panel-head,.recent-card-head,#recentPager{display:flex;align-items:center;justify-content:space-between;gap:7px}
+.recent-panel h2{border:0;margin:0;padding:0}
+.recent-panel button{padding:3px 8px;font-size:13px;white-space:nowrap}
+#recentList article{background:white;border:1px solid #dce6f6;border-radius:9px;margin:7px 0;padding:8px;overflow-wrap:anywhere}
+#recentList article p{margin:4px 0;font-size:13px}
+#recentList details{font-size:13px;margin-top:4px}
+.recent-active{color:#234b95}.recent-done{color:#54617a}
+#recentNotice{min-height:1.3em}
+@media(min-width:1100px){body.recent-open>main{margin-left:350px}body.recent-open #work{grid-template-columns:1fr}}
+@media(max-width:930px){body>header .head-actions{grid-column:1/-1;justify-self:center}}
+@media(max-width:430px){body>header{grid-template-columns:auto 1fr}.site-brand{white-space:normal}}
+#recentList article{padding:4px 7px;margin:4px 0}
+.recent-card-head{align-items:flex-start;line-height:1.3}
+.recent-card-head strong{font-size:13px}
+.recent-card-head button{padding:1px 6px;font-size:12px}
+#recentList .recent-full{margin-top:1px;line-height:1.35}
+#recentList .recent-full>summary{font-size:12px;color:#52647d}
+</style><header><button id="recentOpen" aria-controls="recentPanel" aria-expanded="false">最近事项总结</button><strong class="site-brand">安装成本部每日早会</strong><div class="head-actions"><button id="batchOpen">批量导出</button><button id="publicMonthOpen">公开月报</button><button id="ledgerOpen" hidden>AI 工作台账</button><button class="primary" id="new" hidden>＋ 新建早会记录</button><small id="identity"></small><button id="settings" aria-label="人员设置" title="人员设置">⚙</button></div></header><aside id="recentPanel" class="recent-panel" aria-labelledby="recentTitle" hidden>
+<div class="recent-panel-head"><h2 id="recentTitle">最近事项总结</h2><button id="recentClose">收起</button></div>
+<p id="recentMeta" class="muted"></p><button id="recentRefresh" hidden>立即更新总结</button>
+<p id="recentNotice" class="muted" role="status"></p><div id="recentList"></div>
+<div id="recentPager" hidden><button id="recentPrevious">上一页</button><span id="recentPage"></span><button id="recentNext">下一页</button></div>
+</aside><main><div class="muted">历史记录 · 按日期查看</div><nav id="tabs" role="tablist" aria-label="历史记录"></nav><section class="paper" id="paper"></section></main><button hidden id="context">删除这条记录</button><dialog id="settingsDialog"><h3>设置</h3><div id="adminLogin"><label>管理员密钥<input id="adminKey" type="password"></label><button id="claimAdmin">管理员登录</button></div><section id="adminTools" hidden><label>人员名单（每行一人）<textarea id="names" rows="5"></textarea></label><div class="actions"><button class="primary" id="saveNames">保存名单</button></div><button id="logoutAdmin">退出管理员模式</button><h3>游客管理</h3><button id="clearGuests">清空游客记录</button><div id="guestList"></div></section><form method="dialog"><button>关闭</button></form></dialog><dialog id="ledgerDialog" class="ledger"><form method="dialog" class="ledger-close"><button>关闭</button></form><h2 id="ledgerTitle">公开月报</h2>
+<section><h3>公开月报</h3><label>月份<select id="ledgerMonth"></select></label><p id="noReports">暂无公开月报。</p><div id="publicReport"></div></section>
+<section id="privateLedger" hidden><h3>管理员台账</h3>
+<div class="grid"><label>汇总范围<select id="ledgerRange"><option value="week">本周</option><option value="month">本月</option><option value="previous">上个月</option><option value="custom">自定义日期</option></select></label></div>
+<div id="ledgerCustom" class="grid" hidden><label>开始日期<input type="date" id="ledgerStart"></label><label>结束日期<input type="date" id="ledgerEnd"></label></div>
+<p id="ledgerPreview" class="muted"></p><button class="primary" id="ledgerGenerate">生成台账</button>
+<label>已生成的台账<select id="ledgerDraft"></select></label><div id="draftReport"></div>
+<details><summary>DeepSeek 与月底自动生成设置</summary><p id="keyStatus"></p><label>DeepSeek API Key<input type="password" id="ledgerKey" autocomplete="off" placeholder="留空保留现有密钥"></label><label>每月最后一天执行时间（北京时间）<input type="time" id="ledgerSchedule"></label><div class="actions"><button id="ledgerTest">测试连接</button><button id="ledgerSaveSettings">保存设置</button></div><p id="ledgerErrors"></p></details>
+</section><p id="ledgerMessage" role="status"></p></dialog><dialog id="batchDialog"><h3>批量导出早会记录</h3>
+<label>导出范围<select id="batchRange"><option value="week">本周</option><option value="month">本月</option><option value="previous">上月</option><option value="custom">自定义日期</option></select></label>
+<div class="grid" id="batchCustom" hidden><label>开始日期<input type="date" id="batchStart"></label><label>结束日期<input type="date" id="batchEnd"></label></div>
+<p id="batchStatus" role="status"></p><div class="actions"><button class="primary" id="batchDownload">下载 ZIP</button><form method="dialog"><button>关闭</button></form></div></dialog><dialog id="workConfirmation" aria-labelledby="workConfirmText"><p><strong id="workConfirmText"></strong> <small class="muted" id="workConfirmDate"></small></p><form method="dialog" class="actions"><button value="cancel" autofocus>取消</button><button class="primary" value="confirm">确认</button></form></dialog><script src="template.js"></script><script src="app.js"></script><script src="ledger.js"></script><script src="batch.js"></script><script src="recent.js"></script></html>
+
+
+
+
