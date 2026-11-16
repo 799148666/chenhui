@@ -42,9 +42,8 @@ function tableFor(report, editable) {
   const origin=tr.insertCell();
   if(!editable) origin.textContent=row['来源'].join('、');
   else for(const source of row['来源']){
-   const link=document.createElement('button');link.textContent=source.date;
-   link.onclick=()=>{if(!records.some(r=>r.id===source.id)){ledgerMessage('这条来源记录已删除');return;}
-    active=source.id;ledgerDialog.close();render();};
+   const link=document.createElement('button');link.textContent=source.date+(source.field?' · '+sourceLabel(source.field):'');
+   link.onclick=()=>openSource(source,ledgerDialog);
    origin.append(link);
   }
   return fields;

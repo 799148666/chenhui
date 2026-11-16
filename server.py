@@ -11,6 +11,7 @@ path=root/'records.json'
 lock=threading.Lock()
 state=json.loads(path.read_text(encoding='utf-8')) if path.exists() else dict(records=[],people=['王晓祯','陈秀春'],imported=[],rev=0,next=1)
 state.setdefault('guests', {})
+state.setdefault('trash', [])
 state.setdefault('guest_next', len(state['guests'])+1)
 
 leases = {}
@@ -129,6 +130,7 @@ class Handler(SimpleHTTPRequestHandler):
   data={k:state[k] for k in ('records','people','rev')}
   data['me']=self.guest_view(self.guest)
   data['locks']=[{'id':k[0],'field':k[1],'tab':v['tab'],'name':v['guest']['name']} for k,v in leases.items()]
+  if self.guest['admin']: data['trash']=state['trash']
   if self.guest['admin']: data['guests']=[self.guest_view(g) for g in state['guests'].values() if not g['admin'] and (g['blocked'] or not g.get('cleared'))]
   return data
  def reply(self, data, status=200):
@@ -148,7 +150,26 @@ class Handler(SimpleHTTPRequestHandler):
     self.identity()
     if self.guest['blocked']: return self.reply({'error':'此游客已被管理员拉黑'},403)
     admin=self.guest['admin']
-   return self.reply((recent if self.path=='/api/recent' else ledger).snapshot(admin))
+   if self.path=='/api/recent':
+    with lock:
+     progress={}
+     for record in sorted(state['records'],key=lambda r:r['date']):
+      for row,task in record.get('tasks',{}).items():
+       n=int(row)
+       fact=str(record['fields'].get('F'+row,'')).strip() if 10<=n<=22 else ''
+       previous=progress.get(task)
+       if not previous or fact and fact!=previous[1]:
+        progress[task]=(record['date'],fact)
+    view=recent.snapshot(admin)
+    today=datetime.now(ledger.TZ).date()
+    for item in view.get('rows',[]):
+     latest=max(ref['date'] for ref in item['来源'])
+     if item.get('task_id') in progress: latest=progress[item['task_id']][0]
+     latest=date.fromisoformat(latest)
+     item['stale']=item['状态']!='已完成' and sum(is_workday(today-timedelta(days=n))
+      for n in range(max(0,(today-latest).days)))>=3
+    return self.reply(view)
+   return self.reply(ledger.snapshot(admin))
   if self.path!='/api/state': return super().do_GET()
   with lock:
    self.identity()
@@ -177,7 +198,7 @@ class Handler(SimpleHTTPRequestHandler):
    self.guest['admin']=True
    persist()
    return self.reply({'state':self.snapshot()})
-  if op in ('people','guest','clear_guests','new','logout_admin') and not self.guest['admin']: return self.reply({'error':'需要管理员权限'},403)
+  if op in ('people','guest','clear_guests','new','logout_admin','delete','restore') and not self.guest['admin']: return self.reply({'error':'需要管理员权限'},403)
   if op=='logout_admin':
    self.guest['admin']=False
    self.guest['cleared']=True
@@ -214,7 +235,7 @@ class Handler(SimpleHTTPRequestHandler):
    leases[cell]={'guest':self.guest,'tab':d['tab'],'expires':time.monotonic()+15}
    return self.reply({'state':self.snapshot()})
   r=next((r for r in rs if r['id']==d.get('id')),None)
-  if op in ('field','row','delete','copy_yesterday','copy_preview') and r is None: return self.reply({'error':'这条记录已被删除'},410)
+  if op in ('field','row','delete','copy_yesterday','copy_preview','insert_task') and r is None: return self.reply({'error':'这条记录已被删除'},410)
   def add(src):
    rec=dict(id=state['next'],date=src['date'],fields=src['fields'],rows=src.get('rows',{}),version=0)
    rs.insert(0,rec);state['next']+=1
@@ -229,11 +250,70 @@ class Handler(SimpleHTTPRequestHandler):
    for src in reversed(d['records']):
     if src['id'] not in state['imported']:
      add(src);state['imported'].append(src['id'])
+  elif op=='restore':
+   selected=d.get('ids')
+   if not isinstance(selected,list) or not selected or any(type(i) is not int for i in selected):
+    raise ValueError()
+   restored=[r for r in state['trash'] if r['id'] in selected]
+   if len(restored)!=len(set(selected)): return self.reply({'error':'部分记录已恢复，请刷新回收站'},409)
+   dates=[r['date'] for r in restored]
+   collisions=sorted({day for day in dates if dates.count(day)>1 or any(rec['date']==day for rec in rs)})
+   if collisions and d.get('confirmed_dates')!=collisions:
+    return self.reply({'error':'存在同日期的记录','dates':collisions},409)
+   for record in restored:
+    state['trash'].remove(record)
+    record.pop('deleted_at',None)
+    record['version']+=1
+    rs.append(record)
+   rs.sort(key=lambda record:(record['date'],record['id']),reverse=True)
+  elif op=='insert_task':
+   item=recent.item(d['version'],d['index'])
+   first,last={10:(10,22),24:(24,39)}[d['group']]
+   task=item.get('task_id')
+   for row in range(first,last+1):
+    title=str(r['fields'].get(f'B{row}','')).strip()
+    owner=str(r['fields'].get(f'E{row}','')).strip()
+    if title and (task and r.get('tasks',{}).get(str(row))==task or
+                  (title,owner)==(item['事项'].strip(),item['负责人'].strip())):
+     return self.reply({'error':'该事项已在所选工作表中'},409)
+   row=next((n for n in range(first,last+1) if all(not str(r['fields'].get(f'{col}{n}','')).strip()
+       and (r['id'],f'{col}{n}') not in leases for col in 'BEF')),None)
+   if row is None: return self.reply({'error':'没有可用空行，或空行正在编辑'},409)
+   if not task:
+    origins=[]
+    for ref in item['来源']:
+     original=next((record for record in rs if record['id']==ref['id']),None)
+     if not original: continue
+     field=ref.get('field','')
+     rows=(*range(10,23),*range(24,40))
+     candidates=[n for n in rows if field==f'B{n}'] if field else [
+      n for n in rows if str(original['fields'].get(f'B{n}','')).strip()==item['事项'].strip()
+     ]
+     if len(candidates)==1: origins.append((original,str(candidates[0])))
+    known={record.get('tasks',{}).get(n) for record,n in origins}-{None}
+    task=next(iter(known)) if len(known)==1 else secrets.token_hex(12)
+    if len(known)<=1:
+     for original,n in origins:
+      links=original.setdefault('tasks',{})
+      if n not in links:
+       links[n]=task
+       original['version']+=1
+   r['fields'][f'B{row}']=item['事项']
+   if item['负责人']!='未注明': r['fields'][f'E{row}']=item['负责人']
+   r.setdefault('tasks',{})[str(row)]=task or secrets.token_hex(12)
+   r['rows'][str(first)]=max(r['rows'].get(str(first),2),row-first+1)
+   r['version']+=1
+   result['row']=row
   elif op=='field':
    if lease and not owned: return self.reply({'error':lease['guest']['name']+' 正在编辑'},423)
    k=d['field']; value=str(r['fields'].get(k,'') or '')
    if value!=d['base'] and value!=d['value']: return self.reply({'value':value},409)
    r['fields'][k]=d['value'];r['version']+=1
+   if k.startswith('B') and k[1:].isdigit() and int(k[1:]) in (*range(10,23),*range(24,40)):
+    linked=r.setdefault('tasks',{})
+    if str(d['value']).strip():
+     if k[1:] not in linked: linked[k[1:]]=secrets.token_hex(12)
+    else: linked.pop(k[1:],None)
   elif op in ('copy_yesterday','copy_preview'):
    yesterday=(date.fromisoformat(r['date'])-timedelta(days=1)).isoformat()
    def row_values(record, row):
@@ -250,18 +330,26 @@ class Handler(SimpleHTTPRequestHandler):
     return self.reply({'error':'来源记录已更新，请重新确认'},409)
    occupied={row:row_values(r,row) for row in range(10,23)}
    seen={(work.strip(),owner.strip()) for work,owner,_ in occupied.values() if work.strip()}
+   seen_tasks={r.get('tasks',{}).get(str(n)) for n in occupied}-{None}
    pending=[]
    for row in range(24,40):
     work,owner,_=row_values(previous,row)
     pair=(work.strip(),owner.strip())
-    if pair[0] and pair not in seen:
-     pending.append((work,owner))
+    linked=previous.get('tasks',{}).get(str(row))
+    if pair[0] and pair not in seen and linked not in seen_tasks:
+     if linked: seen_tasks.add(linked)
+     pending.append((work,owner,row))
      seen.add(pair)
    if not pending: return self.reply({'state':self.snapshot(),'count':0})
    free=[row for row,values in occupied.items() if not any(value.strip() for value in values)
          and all((r['id'],f'{col}{row}') not in leases for col in 'BEF')]
    if len(pending)>len(free): return self.reply({'error':'可用的空行不足，或有空行正在编辑。现有内容已保留。'},409)
-   for row,(work,owner) in zip(free,pending):
+   for row,(work,owner,source_row) in zip(free,pending):
+    source_tasks=previous.setdefault('tasks',{})
+    if str(source_row) not in source_tasks:
+     source_tasks[str(source_row)]=secrets.token_hex(12)
+     previous['version']+=1
+    r.setdefault('tasks',{})[str(row)]=source_tasks[str(source_row)]
     r['fields'][f'B{row}']=work
     r['fields'][f'E{row}']=owner
    r['rows']['10']=max(r['rows'].get('10',2),free[len(pending)-1]-9)
@@ -276,6 +364,8 @@ class Handler(SimpleHTTPRequestHandler):
    if any(k[0]==r['id'] for k in leases): return self.reply({'error':'有人正在编辑这条记录'},423)
    if r['version']!=d['version']: return self.reply({'error':'记录刚被修改，请刷新查看后再删除'},409)
    rs.remove(r)
+   r['deleted_at']=datetime.now(ledger.TZ).isoformat(timespec='seconds')
+   state['trash'].append(r)
   elif op=='people':
    if state['people']!=d['base']: return self.reply({'error':'名单刚被修改，请重新打开设置'},409)
    state['people']=d['value']

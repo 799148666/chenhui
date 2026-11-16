@@ -27,7 +27,10 @@ function recentCard(row,index) {
    recentNotice('已复制事项名称');
   } catch { recentNotice('无法访问剪贴板，可选中事项文字手动复制'); }
  };
- head.append(title,copy);
+ const carry=document.createElement('button');
+ carry.textContent='带入';
+ carry.onclick=()=>openCarry(index,recentData.version);
+ head.append(title,copy,carry);
  const meta = document.createElement('small');
  meta.textContent = row['状态']+' · '+row['负责人'];
  meta.className = row['状态']==='已完成'?'recent-done':'recent-active';
@@ -53,7 +56,13 @@ function recentCard(row,index) {
  }
  if (row['来源']?.length) {
   const dates=document.createElement('p');
-  dates.textContent='来源 · '+[...new Set(row['来源'].map(ref=>ref.date))].join('、');
+  dates.append('来源 · ');
+  for (const ref of row['来源']) {
+   const link=document.createElement('button');
+   link.textContent=ref.date+(ref.field?' · '+sourceLabel(ref.field):'');
+   link.onclick=()=>openSource(ref);
+   dates.append(link);
+  }
   full.append(dates);
  }
  if (!me?.admin) return card;
@@ -71,22 +80,37 @@ function recentCard(row,index) {
   edit.append(label);
   fields[name] = field;
  }
+ const kind=document.createElement('select');
+ kind.add(new Option('纠正事实：供下次 AI 核对','fact'));
+ kind.add(new Option('只调整措辞','wording'));
+ kind.setAttribute('aria-label','修订类型');
+ edit.append(kind);
  const version = recentData.version;
  const save = document.createElement('button');
  save.textContent = '保存修改';
  save.onclick = () => recentAction({
-  op:'edit',index,version,row:Object.fromEntries(recentFields.map(name=>[name,fields[name].value]))
- },'修改已保存，下次 AI 总结会参考。');
+  op:'edit',index,version,kind:kind.value,row:Object.fromEntries(recentFields.map(name=>[name,fields[name].value]))
+ },kind.value==='fact'?'事实已纠正，下次 AI 总结会参考。':'措辞已保存。');
  edit.append(save);
  full.append(edit);
  return card;
 }
 function renderRecent() {
- const rows = recentData.rows || [];
+ const all=(recentData.rows||[]).map((row,index)=>({row,index}));
+ const mode=$('recentFilter').value;
+ const person=$('recentPerson').value;
+ $('recentPerson').hidden=mode!=='mine';
+ const rows=all.filter(({row})=>{
+  if(mode==='stale')return row.stale;
+  if(mode==='mine')return row['状态']!=='已完成'&&Boolean(person)&&row['负责人'].split(/[、，,／/]/).map(x=>x.trim()).includes(person);
+  return true;
+ });
+ $('recentEmpty').textContent=rows.length?'':mode==='mine'&&!person?'先选择负责人':'暂无符合条件的事项';
+
  const pages = Math.max(1,Math.ceil(rows.length/10));
  recentPage = Math.min(recentPage,pages-1);
  const start = recentPage*10;
- $('recentList').replaceChildren(...rows.slice(start,start+10).map((row,i)=>recentCard(row,start+i)));
+ $('recentList').replaceChildren(...rows.slice(start,start+10).map(({row,index})=>recentCard(row,index)));
  $('recentMeta').textContent = recentData.generated?
   recentData.start+' 至 '+recentData.end+' · '+rows.length+' 条':'暂无总结。工作日 00:02 自动更新。';
  $('recentPage').textContent = (recentPage+1)+' / '+pages;
@@ -157,3 +181,17 @@ new ResizeObserver(()=>{
  document.body.style.setProperty('--header-height',recentHeader.getBoundingClientRect().height+'px');
 }).observe(recentHeader);
 
+
+function loadRecentPeople(){
+ const select=$('recentPerson');
+ let person='';
+ try{person=localStorage.getItem('morning-person')||''}catch{}
+ if(!person&&people.includes(me?.name))person=me.name;
+ select.replaceChildren(new Option('选择你的姓名',''),...people.map(name=>new Option(name,name)));
+ select.value=people.includes(person)?person:'';
+}
+$('recentFilter').onchange=()=>{recentPage=0;renderRecent()};
+$('recentPerson').onchange=()=>{
+ try{localStorage.setItem('morning-person',$('recentPerson').value)}catch{}
+ recentPage=0;renderRecent();
+};

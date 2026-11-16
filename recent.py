@@ -70,12 +70,22 @@ def start(records, now, auto=False):
         last_failure=None
         threading.Thread(target=generate,args=(key,source,previous,previous_summary.get('version',0),today,auto),daemon=True).start()
 
+def item(version,index):
+    with ledger.mutex:
+        report=current()
+        if version!=report.get('version') or type(index) is not int or not 0<=index<len(report.get('rows',[])):
+            raise ValueError('事项已更新，请重新打开侧栏后再带入')
+        return deepcopy(report['rows'][index])
+
 def action(form, records):
     if form['op']=='generate':
         start(records,datetime.now(ledger.TZ))
         return {'queued':True}
     if form['op']!='edit':
         raise ValueError('操作无效')
+    kind=form.get('kind','fact')
+    if kind not in ('fact','wording'):
+        raise ValueError('请选择修订类型')
     with ledger.mutex:
         report=current()
         if form['version']!=report.get('version',0):
@@ -87,14 +97,23 @@ def action(form, records):
         refs=old['来源']
         submitted={k:form['row'].get(k) for k in ledger.COLUMNS}
         updated=ledger.validate([{**submitted,'来源':[ref['id'] for ref in refs]}],refs)[0]
+        updated['来源']=refs
+        if old.get('task_id'): updated['task_id']=old['task_id']
+        if kind=='wording' and any(updated[k]!=old[k] for k in ('负责人','状态','截止日期')):
+            raise ValueError('文字润色不能修改负责人、状态或截止日期，请选择纠正事实')
         report['rows'][index]=updated
         report['rows'].sort(key=lambda row:row['状态']=='已完成')
         corrections=report.setdefault('corrections',[])
         matches={old['事项'],updated['事项']}
-        corrections[:]=[row for row in corrections if not (
-            row['事项'] in matches and row['来源']==refs
-        )]
-        corrections.append(updated)
+        if kind=='fact':
+            corrections[:]=[row for row in corrections if not (
+                row['事项'] in matches and row['来源']==refs
+            )]
+            corrections.append(updated)
+        else:
+            for previous in corrections:
+                if previous['来源']==refs and previous['事项']==old['事项']:
+                    previous['事项']=updated['事项']
         report['version']+=1
         ledger.persist()
         return {'saved':True}

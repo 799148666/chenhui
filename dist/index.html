@@ -136,12 +136,20 @@ body>header .head-actions{justify-self:end}
 .recent-card-head button{padding:1px 6px;font-size:12px}
 #recentList .recent-full{margin-top:1px;line-height:1.35}
 #recentList .recent-full>summary{font-size:12px;color:#52647d}
+
+.source-highlight{outline:2px solid #345fbd;outline-offset:2px}
+#trashList section{border-bottom:1px solid #dce4ef;padding:8px 0}
+#trashList label{display:flex;align-items:center;gap:8px;margin:0}
+#trashList input[type=checkbox]{width:auto}
+#trashList details{padding-left:20px}
+.recent-card-head strong{flex:1}
+#recentEmpty:empty{display:none}
 </style><header><button id="recentOpen" aria-controls="recentPanel" aria-expanded="false">最近事项总结</button><strong class="site-brand">安装成本部每日早会</strong><div class="head-actions"><button id="batchOpen">批量导出</button><button id="publicMonthOpen">公开月报</button><button id="ledgerOpen" hidden>AI 工作台账</button><button class="primary" id="new" hidden>＋ 新建早会记录</button><small id="identity"></small><button id="settings" aria-label="人员设置" title="人员设置">⚙</button></div></header><aside id="recentPanel" class="recent-panel" aria-labelledby="recentTitle" hidden>
 <div class="recent-panel-head"><h2 id="recentTitle">最近事项总结</h2><button id="recentClose">收起</button></div>
 <p id="recentMeta" class="muted"></p><button id="recentRefresh" hidden>立即更新总结</button>
-<p id="recentNotice" class="muted" role="status"></p><div id="recentList"></div>
+<p id="recentNotice" class="muted" role="status"></p><label>筛选<select id="recentFilter"><option value="all">全部事项</option><option value="mine">我的待办</option><option value="stale">多日未更新（3 个工作日）</option></select></label><select id="recentPerson" aria-label="我的姓名" hidden></select><p id="recentEmpty" class="muted"></p><div id="recentList"></div>
 <div id="recentPager" hidden><button id="recentPrevious">上一页</button><span id="recentPage"></span><button id="recentNext">下一页</button></div>
-</aside><main><div class="muted">历史记录 · 按日期查看</div><nav id="tabs" role="tablist" aria-label="历史记录"></nav><section class="paper" id="paper"></section></main><button hidden id="context">删除这条记录</button><dialog id="settingsDialog"><h3>设置</h3><div id="adminLogin"><label>管理员密钥<input id="adminKey" type="password"></label><button id="claimAdmin">管理员登录</button></div><section id="adminTools" hidden><label>人员名单（每行一人）<textarea id="names" rows="5"></textarea></label><div class="actions"><button class="primary" id="saveNames">保存名单</button></div><button id="logoutAdmin">退出管理员模式</button><h3>游客管理</h3><button id="clearGuests">清空游客记录</button><div id="guestList"></div></section><form method="dialog"><button>关闭</button></form></dialog><dialog id="ledgerDialog" class="ledger"><form method="dialog" class="ledger-close"><button>关闭</button></form><h2 id="ledgerTitle">公开月报</h2>
+</aside><main><div class="muted">历史记录 · 按日期查看</div><nav id="tabs" role="tablist" aria-label="历史记录"></nav><section class="paper" id="paper"></section></main><button hidden id="context">删除这条记录</button><dialog id="settingsDialog"><h3>设置</h3><div id="adminLogin"><label>管理员密钥<input id="adminKey" type="password"></label><button id="claimAdmin">管理员登录</button></div><section id="adminTools" hidden><label>人员名单（每行一人）<textarea id="names" rows="5"></textarea></label><div class="actions"><button class="primary" id="saveNames">保存名单</button></div><button id="trashOpen" hidden>回收站</button><button id="logoutAdmin">退出管理员模式</button><h3>游客管理</h3><button id="clearGuests">清空游客记录</button><div id="guestList"></div></section><form method="dialog"><button>关闭</button></form></dialog><dialog id="ledgerDialog" class="ledger"><form method="dialog" class="ledger-close"><button>关闭</button></form><h2 id="ledgerTitle">公开月报</h2>
 <section><h3>公开月报</h3><label>月份<select id="ledgerMonth"></select></label><p id="noReports">暂无公开月报。</p><div id="publicReport"></div></section>
 <section id="privateLedger" hidden><h3>管理员台账</h3>
 <div class="grid"><label>汇总范围<select id="ledgerRange"><option value="week">本周</option><option value="month">本月</option><option value="previous">上个月</option><option value="custom">自定义日期</option></select></label></div>
@@ -152,8 +160,5 @@ body>header .head-actions{justify-self:end}
 </section><p id="ledgerMessage" role="status"></p></dialog><dialog id="batchDialog"><h3>批量导出早会记录</h3>
 <label>导出范围<select id="batchRange"><option value="week">本周</option><option value="month">本月</option><option value="previous">上月</option><option value="custom">自定义日期</option></select></label>
 <div class="grid" id="batchCustom" hidden><label>开始日期<input type="date" id="batchStart"></label><label>结束日期<input type="date" id="batchEnd"></label></div>
-<p id="batchStatus" role="status"></p><div class="actions"><button class="primary" id="batchDownload">下载 ZIP</button><form method="dialog"><button>关闭</button></form></div></dialog><dialog id="workConfirmation" aria-labelledby="workConfirmText"><p><strong id="workConfirmText"></strong> <small class="muted" id="workConfirmDate"></small></p><form method="dialog" class="actions"><button value="cancel" autofocus>取消</button><button class="primary" value="confirm">确认</button></form></dialog><script src="template.js"></script><script src="app.js"></script><script src="ledger.js"></script><script src="batch.js"></script><script src="recent.js"></script></html>
-
-
-
-
+<p id="batchStatus" role="status"></p><div class="actions"><button class="primary" id="batchDownload">下载 ZIP</button><form method="dialog"><button>关闭</button></form></div></dialog><dialog id="workConfirmation" aria-labelledby="workConfirmText"><p><strong id="workConfirmText"></strong> <small class="muted" id="workConfirmDate"></small></p><form method="dialog" class="actions"><button value="cancel" autofocus>取消</button><button class="primary" value="confirm">确认</button></form></dialog><dialog id="carryDialog"><h3>带入早会记录</h3><p id="carryDate"></p><label>带入位置<select id="carryGroup"><option value="24">今日重点工作安排</option><option value="10">昨日工作回顾</option></select></label><div class="actions"><button id="carryConfirm" class="primary">确认带入</button><form method="dialog"><button>取消</button></form></div></dialog>
+<dialog id="trashDialog"><h3>早会回收站</h3><p id="trashCount" role="status"></p><div id="trashList"></div><div class="actions"><button id="restoreTrash" class="primary">恢复所选</button><form method="dialog"><button>关闭</button></form></div></dialog><script src="template.js"></script><script src="app.js"></script><script src="ledger.js"></script><script src="batch.js"></script><script src="recent.js"></script><script src="workflow.js"></script></html>

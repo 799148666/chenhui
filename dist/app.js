@@ -18,6 +18,9 @@ function presence(s){
  me=s.me;guests=s.guests||[];locks=s.locks||[];
  $('ledgerOpen').hidden=!me.admin;
  $('new').hidden=!me.admin;
+ $('trashOpen').hidden=!me.admin;
+ const deleteButton=$('remove');if(deleteButton)deleteButton.hidden=!me.admin;
+ if(!me.admin)$('context').hidden=true;
  $('identity').textContent=me.admin?'管理员':me.name;
  for(const el of document.querySelectorAll('[data-field]')){
   const other=locks.find(l=>l.id===active&&l.field===el.dataset.field&&l.tab!==tabId);
@@ -83,7 +86,7 @@ function history(tabs, rec){
   const b=document.createElement('button'), peers=records.filter(x=>x.date===r.date);
   b.textContent=r.date+(peers.length>1?' · '+(peers.indexOf(r)+1):'');b.setAttribute('role','tab');b.setAttribute('aria-selected',String(r===rec));
   b.onclick=()=>queue.then(()=>{active=r.id;render()});
-  b.oncontextmenu=e=>{e.preventDefault();const m=$('context');m.hidden=false;m.style.left=Math.min(e.clientX,innerWidth-155)+'px';m.style.top=Math.min(e.clientY,innerHeight-55)+'px';m.onclick=()=>{m.hidden=true;remove(r.id)}};
+  b.oncontextmenu=e=>{if(!me?.admin)return;e.preventDefault();const m=$('context');m.hidden=false;m.style.left=Math.min(e.clientX,innerWidth-155)+'px';m.style.top=Math.min(e.clientY,innerHeight-55)+'px';m.onclick=()=>{m.hidden=true;remove(r.id)}};
   return b;
  }
  function archive(label,rs){
@@ -94,7 +97,7 @@ function history(tabs, rec){
  for(const [w,rs] of weeks)archive(w+' 周归档',rs);
  tabs.append(...current.map(tab));
 }
-function remove(id){queue.then(()=>{const r=records.find(x=>x.id===id);if(r&&confirm('确定删除 '+r.date+' 的这条早会记录？'))change({op:'delete',id,version:r.version})})}
+function remove(id){if(!me?.admin)return;queue.then(()=>{const r=records.find(x=>x.id===id);if(r&&confirm('将 '+r.date+' 的这条早会记录移入回收站？'))change({op:'delete',id,version:r.version})})}
 const groups=[[10,22,'1. 昨日工作回顾 / 完成情况','完成情况'],[24,39,'2. 今日重点工作安排','完成要求']];
 const expandedMeetings=new Set();
 const labels=['会议主题','会议地点','主持人','记录人','开始时间','结束时间'];
@@ -188,6 +191,7 @@ const actions=document.createElement('div');actions.className='work-actions';
   const h=document.createElement(k==='A47'?'h2':'h3');h.textContent=l;const note=document.createElement('section');note.append(h,field(k,l,true,false));$('notes').append(note);
  }
  $('download').onclick=()=>queue.then(()=>{const latest=records.find(x=>x.id===rec.id);if(latest)download(latest)});
+ $('remove').hidden=!me?.admin;
  $('remove').onclick=()=>remove(rec.id);
 }
 function workConfirmation(message, date=''){
