@@ -1,0 +1,10 @@
+admin-key.txt
+records.json
+records.tmp
+ledgers.json
+ledgers.tmp
+.env
+.env.*
+__pycache__/
+*.pyc
+*.zip
